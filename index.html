@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Your Code</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 90%;
+            box-sizing: border-box;
+        }
+        h1 {
+            color: #4a69bd;
+            margin-bottom: 25px;
+            font-size: 2.2em;
+        }
+        p {
+            margin-bottom: 30px;
+            font-size: 1.1em;
+            color: #666;
+        }
+        input[type="text"] {
+            padding: 14px;
+            margin: 15px 0;
+            border: 1px solid #cdd0d5;
+            border-radius: 8px;
+            width: calc(100% - 28px);
+            font-size: 1.15em;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        button {
+            background-color: #4a69bd;
+            color: white;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button:hover {
+            background-color: #3b508f;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        #message {
+            color: #dc3545;
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Welcome!</h1>
+        <p>Please enter your access code:</p>
+        <input type="text" id="accessCodeInput" placeholder="Enter code here" onkeydown="if(event.key === 'Enter') processCode()">
+        <button onclick="processCode()">Access</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        function processCode() {
+            const code = document.getElementById("accessCodeInput").value.trim();
+            if (code) {
+                // Redirect to the checker page, passing the code as a URL parameter
+                window.location.href = "checkcode.html?code=" + encodeURIComponent(code);
+            } else {
+                document.getElementById("message").textContent = "Please enter a code.";
+            }
+        }
+        window.onload = function() {
+            document.getElementById("accessCodeInput").focus();
+        };
+    </script>
+
+</body>
+</html>

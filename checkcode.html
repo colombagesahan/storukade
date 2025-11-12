@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Code...</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f0f8ff; /* Light blue background */
+            color: #333;
+        }
+        .loading-box {
+            text-align: center;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .spinner {
+            border: 4px solid rgba(0, 123, 255, 0.2);
+            border-left-color: #007bff; /* Blue spinner */
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loading-box">
+        <div class="spinner"></div>
+        <p>Verifying your code. Please wait...</p>
+    </div>
+
+    <script>
+        // --- YOUR SECRET CONFIGURATION FOR THE GATE PASS ---
+        // Only one gate pass: "199467" -> "199467.html"
+
+        const _getMap = () => {
+            const map = {
+                // HASH of "199467" is: 71c4c95f13454231b790d56b0d9111c1d81123512b9d0473a218d8e5f29d10e5
+                "71c4c95f13454231b790d56b0d9111c1d81123512b9d0473a218d8e5f29d10e5": "199467.html"
+            };
+            return map;
+        };
+        // ---------------------------------------------------
+
+
+        // Function to hash a string using SHA-256 (browser's Web Crypto API)
+        async function hashString(str) {
+            const textEncoder = new TextEncoder();
+            const data = textEncoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hexHash;
+        }
+
+        // Main initialization function
+        async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const enteredCode = urlParams.get('code');
+
+            if (!enteredCode) {
+                // If no code was passed, redirect to the password entry page with an error
+                window.location.replace("password.html?error=no_code_provided");
+                return;
+            }
+
+            const hashedEnteredCode = await hashString(enteredCode); // Hash the user's input
+            const codeMap = _getMap(); // Get the map of hashed codes to pages
+
+            if (codeMap[hashedEnteredCode]) {
+                // If the hashed code is found in our map, redirect to the target page
+                window.location.replace(codeMap[hashedEnteredCode]);
+            } else {
+                // If no match, redirect to a generic error page
+                // Since there's only one valid code, anything else goes here.
+                window.location.replace("error.html?reason=invalid_code");
+            }
+        }
+
+        window.onload = init; // Execute the init function when the page finishes loading
+    </script>
+
+</body>
+</html>
