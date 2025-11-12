@@ -47,31 +47,22 @@
     <script>
         // --- YOUR DEFINITIVE GATE PASS CONFIGURATION ---
         // Only one gate pass: "199467" -> "199467.html"
+        // The code "199467" is directly visible in this JavaScript.
 
         const _getMap = () => {
             const map = {
-                // This is the SHA-256 hash of the string "199467"
-                "71c4c95f13454231b790d56b0d9111c1d81123512b9d0473a218d8e5f29d10e5": "199467.html"
+                // The plain-text code "199467" maps directly to "199467.html"
+                "199467": "199467.html"
             };
             return map;
         };
         // ---------------------------------------------------
 
-
-        // Function to hash a string using SHA-256 (browser's Web Crypto API)
-        async function hashString(str) {
-            const textEncoder = new TextEncoder();
-            const data = textEncoder.encode(str);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            const hexHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-            return hexHash;
-        }
-
         // Main initialization function
         async function init() {
             const urlParams = new URLSearchParams(window.location.search);
-            const enteredCode = urlParams.get('code');
+            // Trim any leading/trailing whitespace from the entered code for robustness
+            const enteredCode = urlParams.get('code') ? urlParams.get('code').trim() : '';
 
             // Construct the base URL for redirection (e.g., https://colombagesahan.github.io/storukade/)
             const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/';
@@ -83,16 +74,25 @@
                 return;
             }
 
-            const hashedEnteredCode = await hashString(enteredCode); // Hash the user's input
-            const codeMap = _getMap(); // Get the map of hashed codes to pages
+            const codeMap = _getMap(); // Get the map of codes to pages
 
-            if (codeMap[hashedEnteredCode]) {
-                // If the hashed code is found in our map, redirect to the target page
-                const targetPage = codeMap[hashedEnteredCode];
+            // --- DEBUG CONSOLE.LOGS (Leave these in for now to help debug) ---
+            console.log("Entered Code (from URL):", enteredCode);
+            console.log("Length of Entered Code:", enteredCode.length);
+            console.log("Expected Code (from _getMap):", "199467");
+            console.log("Map contents:", codeMap);
+            // --- END DEBUG ---
+
+            if (codeMap[enteredCode]) { // Directly compare the entered code to the map key
+                // --- DEBUG CONSOLE.LOGS ---
+                console.log("Code matched! Redirecting to:", codeMap[enteredCode]);
+                // --- END DEBUG ---
+                const targetPage = codeMap[enteredCode];
                 window.location.replace(baseUrl + targetPage); // Use robust absolute URL
             } else {
-                // If no match, redirect to the error page.
-                // Since there's only one valid code, anything else goes here.
+                // --- DEBUG CONSOLE.LOGS ---
+                console.log("Code did NOT match. Redirecting to error page.");
+                // --- END DEBUG ---
                 window.location.replace(baseUrl + "error.html?reason=invalid_code"); // Use robust absolute URL
             }
         }
