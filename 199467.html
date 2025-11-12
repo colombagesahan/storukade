@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Rubber Milk & Ottapalu Manager — Updated</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --muted:#6b7280; --accent:#0f62fe;
+    --danger:#ef4444; --success:#16a34a; --border:#e6e9ee; --shadow: 0 6px 18px rgba(15,22,40,0.06);
+    --radius:12px; --gap:16px; --max-width:1100px; --font-sans: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  body{font-family:var(--font-sans);background:linear-gradient(180deg,#f7f9fc 0%,var(--bg) 100%);margin:0;color:#0f1724;line-height:1.45;padding:18px;display:flex;justify-content:center}
+  .app{width:100%;max-width:var(--max-width);} 
+  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .logo{width:56px;height:56px;background:linear-gradient(135deg,#0f62fe 0%,#6ec1ff 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:var(--shadow)}
+  header h1{font-size:20px;margin:0}
+  header p{margin:0;color:var(--muted);font-size:13px}
+
+  /* layout */
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:var(--gap)}
+  @media (max-width:1000px){ .grid{grid-template-columns:1fr} }
+
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;border:1px solid var(--border);box-shadow:var(--shadow)}
+  label{display:block;font-size:13px;color:#111827;margin-bottom:6px;font-weight:600}
+  input,select,button,textarea{font-family:inherit;font-size:14px}
+  input[type="text"],input[type="number"],input[type="date"],input[type="month"],select,textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 6px 18px rgba(15,98,254,0.08)}
+
+  .row{display:flex;gap:10px}
+  .row .col{flex:1}
+  .actions{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .btn{background:linear-gradient(180deg,#fff,#f7fbff);border:1px solid #c7d2fe;padding:8px 12px;border-radius:8px;cursor:pointer}
+  .btn.primary{background:linear-gradient(180deg,#0f62fe,#0747a6);color:#fff;border:0}
+  .btn.ghost{background:transparent;border:1px solid #e6e9ee}
+  .btn.danger{background:linear-gradient(180deg,#fff,#fff);border:1px solid var(--danger);color:var(--danger)}
+  .muted{color:var(--muted);font-size:13px}
+  .note{font-size:13px;color:#334155;padding:10px;background:#fbfdff;border-radius:8px;border:1px solid #eef2ff}
+
+  table{width:100%;border-collapse:collapse;background:transparent}
+  th,td{padding:8px;border-bottom:1px solid #f1f5f9;text-align:left;font-size:13px}
+  thead th{font-weight:700;color:#0f1724}
+  .small{width:110px}
+  .right{text-align:right}
+
+  .supplier-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;border:1px solid transparent}
+  .supplier-item:hover{background:#fbfdff;border-color:#eef2ff}
+
+  .toast-wrap{position:fixed;right:20px;bottom:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .toast{background:#111827;color:white;padding:10px 14px;border-radius:8px;box-shadow:0 6px 20px rgba(2,6,23,0.2);font-size:13px;opacity:0.98}
+  .toast.success{background:var(--success)}
+  .toast.error{background:var(--danger)}
+  .input-error{border-color:var(--danger)!important}
+  .error-text{color:var(--danger);font-size:12px;margin-top:6px}
+  .muted-small{font-size:12px;color:var(--muted)}
+
+  /* full-screen profile view */
+  .profile-screen{display:none}
+  .profile-screen.active{display:block}
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .back-btn{border-radius:8px;padding:8px 10px;border:0;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 6px 16px rgba(15,98,254,0.12)}
+
+  /* modal edit record */
+  .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);z-index:9998}
+  .modal-card{background:#fff;padding:16px;border-radius:12px;max-width:520px;width:100%;box-shadow:0 12px 40px rgba(2,6,23,0.25)}
+  .modal h3{margin-top:0}
+
+  .totals-panel{display:flex;flex-direction:column;gap:8px}
+  .totals-row{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:#fff;border:1px solid #eef2f7}
+
+  footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+  @media (max-width:640px){ .row{flex-direction:column} .actions{flex-direction:column} .grid{gap:12px} }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="logo">RM</div>
+      <div>
+        <h1>Rubber Milk & Ottapalu Manager</h1>
+        <p class="muted">Separate forms for Rubber Milk and Ottapalu — daily aggregation per supplier + product.</p>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div class="status-badge" id="storageStatus">Storage: OK</div>
+      </div>
+    </header>
+
+    <!-- HOME SCREEN -->
+    <main id="homeScreen" class="grid" aria-live="polite">
+      <!-- LEFT: MAIN -->
+      <section class="card" aria-labelledby="supplier-add-title">
+        <h2 id="supplier-add-title">Add / Edit Supplier</h2>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label for="supplierId">Supplier ID (unique)</label>
+            <input id="supplierId" type="text" placeholder="e.g. SUP001" maxlength="30" inputmode="text" autocomplete="off" />
+            <div id="supplierIdError" class="error-text" style="display:none"></div>
+          </div>
+          <div>
+            <label for="supplierName">Supplier Name</label>
+            <input id="supplierName" type="text" placeholder="Supplier full name" maxlength="80" />
+            <div id="supplierNameError" class="error-text" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:12px">
+          <button id="addSupplierBtn" class="btn primary">Add / Save Supplier</button>
+          <button id="deleteSupplierBtn" class="btn danger">Delete Supplier</button>
+          <div class="muted-small">Tip: Use the supplier ID to search & open profile.</div>
+        </div>
+
+        <hr style="margin:14px 0;border:0;border-top:1px solid #eef2f7" />
+
+        <h2 style="margin-top:0">Find Supplier</h2>
+        <div class="row" style="align-items:center">
+          <div class="col">
+            <label for="searchId">Supplier ID</label>
+            <input id="searchId" placeholder="Enter supplier ID and press Open" />
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;width:160px">
+            <button id="openProfileBtn" class="btn">Open</button>
+          </div>
+        </div>
+
+        <h3 style="margin-top:12px">All Suppliers</h3>
+        <div id="suppliersList" style="max-height:320px;overflow:auto"></div>
+      </section>
+
+      <!-- RIGHT: ACCOUNTS & TOTALS -->
+      <section class="card" aria-labelledby="accounts-title">
+        <h2 id="accounts-title">Accounts & Monthly Statements (All Suppliers)</h2>
+        <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+          <div style="min-width:200px">
+            <label>Pick month</label>
+            <input id="globalMonth" type="month" />
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="downloadCSVAll" class="btn">Download CSV (All)</button>
+            <button id="downloadHTMLAll" class="btn">Download HTML (All)</button>
+            <button id="downloadPDFAll" class="btn">Download PDF (All)</button>
+          </div>
+        </div>
+
+        <hr style="margin:12px 0;border:0;border-top:1px solid #eef2f7" />
+
+        <div class="totals-panel">
+          <div class="muted-small">Product totals (all-time)</div>
+          <div class="totals-row"><div>Rubber Milk — Kg</div><div id="home_milkKg">0</div></div>
+          <div class="totals-row"><div>Rubber Milk — Earnings (LKR)</div><div id="home_milkEarn">0</div></div>
+          <div class="totals-row"><div>Ottapalu — Kg</div><div id="home_ottKg">0</div></div>
+          <div class="totals-row"><div>Ottapalu — Earnings (LKR)</div><div id="home_ottEarn">0</div></div>
+          <div class="totals-row" style="font-weight:700"><div>Combined Earnings (LKR)</div><div id="home_combinedEarn">0</div></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- PROFILE SCREEN -->
+    <main id="profileScreen" class="profile-screen">
+      <div class="card">
+        <div class="topbar">
+          <button id="backHome" class="back-btn">← Back</button>
+          <div style="flex:1">
+            <div class="muted">Profile</div>
+            <div style="font-weight:700;font-size:18px" id="profileTitleSmall">Supplier</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="exportSupplierProfileHTML" class="btn">Export HTML</button>
+            <button id="exportSupplierProfileCSV" class="btn">Export CSV</button>
+            <button id="exportSupplierProfilePDF" class="btn">Export PDF</button>
+          </div>
+        </div>
+
+        <div id="profileContent"></div>
+      </div>
+    </main>
+
+    <footer>Built for local use • Data in browser (localStorage) • Single-file app</footer>
+
+    <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+  </div>
+
+  <!-- Edit modal -->
+  <div id="editModal" class="modal" style="display:none">
+    <div class="modal-card" role="dialog" aria-modal="true">
+      <h3>Edit Record</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label>Product</label>
+          <select id="editType">
+            <option value="milk">Rubber Milk</option>
+            <option value="ottapalu">Ottapalu</option>
+          </select>
+        </div>
+        <div>
+          <label>Date</label>
+          <input id="editDate" type="date" />
+        </div>
+        <div id="editLitersWrap">
+          <label>Liters</label>
+          <input id="editLiters" type="number" step="any" />
+        </div>
+        <div id="editKgWrap" style="display:none">
+          <label>Kg</label>
+          <input id="editKg" type="number" step="any" />
+        </div>
+        <div id="editMeterWrap">
+          <label>Meter</label>
+          <select id="editMeter"></select>
+        </div>
+        <div>
+          <label>Rate (LKR/kg)</label>
+          <input id="editRate" type="number" step="any" />
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="cancelEdit" class="btn ghost">Cancel</button>
+        <button id="saveEdit" class="btn primary">Save changes</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ================= DATA & HELPERS ================= */
+const specialMap = {150:0.40,140:0.38,130:0.36,120:0.34,110:0.32,100:0.30,90:0.28,80:0.26,70:0.24,60:0.22,50:0.20};
+const STORAGE_KEY = 'rubber_suppliers_v1';
+
+function readAll(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e){ showToast('Unable to read storage','error'); return {}; } }
+function writeAll(obj){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); return true; } catch(e){ showToast('Failed to save data: storage full or unavailable','error'); return false; } }
+function round(v){ return Math.round((v + Number.EPSILON) * 1000) / 1000; }
+function escapeHtml(s){ if(s===null || s===undefined) return ''; return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function showToast(message, type=''){ const wrap=document.getElementById('toastWrap'); const t=document.createElement('div'); t.className='toast'+(type? ' ' + type : ''); t.textContent = message; wrap.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.addEventListener('transitionend', ()=> t.remove()); t.style.transition='opacity 400ms'; }, 3000); }
+function isValidDateString(s){ if(!s) return false; const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/); if(!m) return false; const d = new Date(s); return !isNaN(d.getTime()) && d.toISOString().slice(0,10) === s; }
+
+/* ================= DOM REFS ================= */
+const homeScreen = document.getElementById('homeScreen');
+const profileScreen = document.getElementById('profileScreen');
+const profileContent = document.getElementById('profileContent');
+const profileTitleSmall = document.getElementById('profileTitleSmall');
+const backHome = document.getElementById('backHome');
+
+const supplierId = document.getElementById('supplierId');
+const supplierName = document.getElementById('supplierName');
+const addSupplierBtn = document.getElementById('addSupplierBtn');
+const deleteSupplierBtn = document.getElementById('deleteSupplierBtn');
+const suppliersList = document.getElementById('suppliersList');
+const searchId = document.getElementById('searchId');
+const openProfileBtn = document.getElementById('openProfileBtn');
+
+const globalMonth = document.getElementById('globalMonth');
+const downloadCSVAll = document.getElementById('downloadCSVAll');
+const downloadHTMLAll = document.getElementById('downloadHTMLAll');
+const downloadPDFAll = document.getElementById('downloadPDFAll');
+
+const exportSupplierProfileHTML = document.getElementById('exportSupplierProfileHTML');
+const exportSupplierProfileCSV = document.getElementById('exportSupplierProfileCSV');
+const exportSupplierProfilePDF = document.getElementById('exportSupplierProfilePDF');
+
+const editModal = document.getElementById('editModal');
+const editDate = document.getElementById('editDate');
+const editLiters = document.getElementById('editLiters');
+const editKg = document.getElementById('editKg');
+const editMeter = document.getElementById('editMeter');
+const editRate = document.getElementById('editRate');
+const editType = document.getElementById('editType');
+const editMeterWrap = document.getElementById('editMeterWrap');
+const editKgWrap = document.getElementById('editKgWrap');
+const editLitersWrap = document.getElementById('editLitersWrap');
+const cancelEdit = document.getElementById('cancelEdit');
+const saveEdit = document.getElementById('saveEdit');
+
+let currentSupplierId = null;
+let editingRecordId = null;
+
+/* Populate meters helper: can accept single select or NodeList */
+function populateMetersInto(target){
+  if(!target) return;
+  if(NodeList.prototype.isPrototypeOf(target) || Array.isArray(target)){
+    target.forEach(t => populateMetersInto(t)); return;
+  }
+  target.innerHTML = '';
+  Object.keys(specialMap).sort((a,b)=>b-a).forEach(m=>{
+    const o = document.createElement('option');
+    o.value = m;
+    o.textContent = `${m} (factor ${specialMap[m].toFixed(2)})`;
+    target.appendChild(o);
+  });
+}
+populateMetersInto(editMeter);
+
+/* ================= SUPPLIERS LIST ================= */
+function refreshSuppliersList(){
+  const all = readAll();
+  suppliersList.innerHTML = '';
+  const keys = Object.keys(all).sort();
+  if(keys.length === 0){
+    suppliersList.textContent = 'No suppliers yet.';
+    updateHomeTotals(); // clear totals
+    return;
+  }
+  keys.forEach(k => {
+    const sup = all[k];
+    const item = document.createElement('div');
+    item.className = 'supplier-item';
+    item.innerHTML = `<div><strong>${escapeHtml(k)}</strong> <span class="muted-small">— ${escapeHtml(sup.name || '')}</span></div>
+      <div style="display:flex;gap:8px"><button class="btn" data-open="${k}">Open</button></div>`;
+    suppliersList.appendChild(item);
+    item.querySelector('button[data-open]').addEventListener('click', ()=> openProfileFull(k) );
+  });
+  updateHomeTotals();
+}
+
+/* ================= ADD / DELETE SUPPLIER ================= */
+addSupplierBtn.addEventListener('click', ()=>{
+  clearFieldErrors();
+  const id = supplierId.value.trim();
+  const name = supplierName.value.trim();
+  if(!id){ showFieldError(supplierId, 'Supplier ID required'); return; }
+  if(!/^[A-Za-z0-9\-_]+$/.test(id)){ showFieldError(supplierId, 'ID may contain letters, numbers, - or _'); return; }
+  if(!name){ showFieldError(supplierName, 'Supplier name required'); return; }
+  const all = readAll();
+  if(all[id] && !confirm(`Supplier ID "${id}" already exists — update name?`)) return;
+  if(!all[id]) all[id] = { name: name, records: [] };
+  else all[id].name = name;
+  if(writeAll(all)){
+    supplierId.value=''; supplierName.value='';
+    refreshSuppliersList();
+    showToast('Supplier saved','success');
+  }
+});
+
+deleteSupplierBtn.addEventListener('click', ()=>{
+  const id = supplierId.value.trim();
+  if(!id){ showFieldError(supplierId, 'Enter supplier ID to delete'); return; }
+  const all = readAll();
+  if(!all[id]){ showToast('Supplier not found', 'error'); return; }
+  if(!confirm(`Delete supplier ${id} and all records? This cannot be undone.`)) return;
+  delete all[id];
+  if(writeAll(all)){ refreshSuppliersList(); showToast('Deleted'); if(currentSupplierId === id) closeProfile(); }
+});
+
+/* ================= OPEN PROFILE (FULL SCREEN) ================= */
+openProfileBtn.addEventListener('click', ()=> {
+  clearFieldErrors();
+  const id = searchId.value.trim();
+  if(!id){ showFieldError(searchId, 'Enter supplier ID'); return; }
+  openProfileFull(id);
+});
+
+function openProfileFull(id){
+  const all = readAll();
+  const sup = all[id];
+  if(!sup){ showToast('Supplier not found', 'error'); return; }
+  currentSupplierId = id;
+  homeScreen.style.display = 'none';
+  profileScreen.classList.add('active');
+  profileTitleSmall.textContent = `${id} — ${sup.name||''}`;
+  buildProfileContent(true);
+}
+
+/* go back */
+backHome.addEventListener('click', ()=>{
+  profileScreen.classList.remove('active');
+  homeScreen.style.display = 'grid';
+  currentSupplierId = null;
+  profileContent.innerHTML = '';
+  showToast('Back to home');
+});
+
+/* ================= PROFILE: BUILD CONTENT (two separate add areas) ================= */
+function buildProfileContent(full = false){
+  const all = readAll();
+  const sup = all[currentSupplierId];
+  if(!sup) return;
+  let html = `<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+    <div><strong>${escapeHtml(currentSupplierId)}</strong></div>
+    <div style="flex:1"><div style="font-weight:700">${escapeHtml(sup.name || '')}</div></div>
+  </div>`;
+
+  // Rubber Milk area
+  html += `<div style="margin-bottom:12px;padding:10px;border-radius:8px;background:#fbfdff;border:1px solid #eef2ff">
+    <h3>Rubber Milk — Add / Update (per date)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:end">
+      <div><label>Date</label><input id="milk_date" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
+      <div><label>Liters</label><input id="milk_liters" type="number" step="any" /></div>
+      <div><label>Meter</label><select id="milk_meter"></select></div>
+      <div><label>Rate per kg (LKR)</label><input id="milk_rate" type="number" step="any" value="200" /></div>
+      <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end">
+        <div class="muted-small" style="align-self:center">Calculated KG: <strong id="milk_calcKg">0</strong></div>
+        <button id="btn_addMilk" class="btn primary">Add / Update Milk</button>
+      </div>
+    </div>
+  </div>`;
+
+  // Ottapalu area
+  html += `<div style="margin-bottom:12px;padding:10px;border-radius:8px;background:#fff7f9;border:1px solid #fff0f3">
+    <h3>Ottapalu — Add / Update (per date)</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;align-items:end">
+      <div><label>Date</label><input id="ott_date" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
+      <div><label>Kg</label><input id="ott_kg" type="number" step="any" /></div>
+      <div><label>Rate per kg (LKR)</label><input id="ott_rate" type="number" step="any" value="100" /></div>
+      <div style="grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end">
+        <div class="muted-small" style="align-self:center">Calculated KG: <strong id="ott_calcKg">0</strong></div>
+        <button id="btn_addOtt" class="btn primary">Add / Update Ottapalu</button>
+      </div>
+    </div>
+  </div>`;
+
+  html += `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+    <div><label>Daily (choose date)</label><input id="p_dailyDate" type="date" value="${new Date().toISOString().slice(0,10)}" /><div class="note">Milk Liters: <span id="p_dailyMilkLit">0</span> | Milk Kg: <span id="p_dailyMilkKg">0</span> | Milk Earn: <span id="p_dailyMilkEarn">0</span></div></div>
+    <div><label>Monthly</label><input id="p_month" type="month" value="${new Date().toISOString().slice(0,7)}" /><div class="note">Milk Kg: <span id="p_monthMilkKg">0</span> | Ottapalu Kg: <span id="p_monthOttKg">0</span> | Combined Earn: <span id="p_monthCombinedEarn">0</span></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px;align-self:flex-end">
+      <button id="p_exportCSV" class="btn">Export CSV (this supplier)</button>
+      <button id="p_exportHTML" class="btn">Export HTML (this supplier)</button>
+      <button id="p_exportPDF" class="btn">Export PDF (this supplier)</button>
+    </div>
+  </div>`;
+
+  html += `<h3>Records</h3><div id="p_recordsArea"></div>`;
+
+  profileContent.innerHTML = html;
+
+  // populate meter select
+  const milk_meter = document.getElementById('milk_meter');
+  populateMetersInto(milk_meter);
+
+  // calculation updates
+  const milk_liters = document.getElementById('milk_liters');
+  const milk_calcKg = document.getElementById('milk_calcKg');
+  const ott_kg = document.getElementById('ott_kg');
+  const ott_calcKg = document.getElementById('ott_calcKg');
+
+  function updateMilkCalc(){ const liters = Number(milk_liters.value)||0; const meter = Number(milk_meter.value); const kg = round(liters * (specialMap[meter]||0)); milk_calcKg.textContent = kg + ' kg'; }
+  function updateOttCalc(){ const kg = round(Number(ott_kg.value)||0); ott_calcKg.textContent = kg + ' kg'; }
+  milk_liters.addEventListener('input', updateMilkCalc);
+  milk_meter.addEventListener('change', updateMilkCalc);
+  ott_kg.addEventListener('input', updateOttCalc);
+
+  // Add/Update Milk: aggregation by date & product
+  document.getElementById('btn_addMilk').addEventListener('click', ()=>{
+    const date = document.getElementById('milk_date').value;
+    if(!isValidDateString(date)){ showToast('Invalid date for milk','error'); return; }
+    const liters = Number(milk_liters.value);
+    const meter = Number(milk_meter.value);
+    const rate = Number(document.getElementById('milk_rate').value);
+    if(!liters || liters <= 0){ showToast('Enter liters > 0','error'); return; }
+    if(!specialMap[meter]){ showToast('Select meter','error'); return; }
+    if(isNaN(rate) || rate < 0){ showToast('Enter valid rate','error'); return; }
+
+    const all = readAll();
+    const sup = all[currentSupplierId];
+    // find existing record for date & type 'milk'
+    const existing = (sup.records||[]).find(r => r.date === date && r.type === 'milk');
+    if(existing){
+      // aggregate: sum liters, recalc kg & earning using latest rate
+      const newLit = round((Number(existing.liters)||0) + liters);
+      const kg = round(newLit * specialMap[meter]);
+      const earning = round(kg * rate);
+      existing.liters = newLit;
+      existing.meter = meter; // store latest meter (reasonable)
+      existing.kg = kg;
+      existing.rate = rate;
+      existing.earning = earning;
+      showToast('Existing milk record updated (aggregated)','success');
+    } else {
+      const kg = round(liters * specialMap[meter]);
+      const earning = round(kg * rate);
+      sup.records.push({ id: Date.now(), type:'milk', date, liters: round(liters), meter, kg, rate, earning });
+      showToast('Milk record added','success');
+    }
+    if(writeAll(all)){ renderProfileRecords(); updateProfileTotals(); refreshSuppliersList(); }
+  });
+
+  // Add/Update Ottapalu: aggregation by date & product
+  document.getElementById('btn_addOtt').addEventListener('click', ()=>{
+    const date = document.getElementById('ott_date').value;
+    if(!isValidDateString(date)){ showToast('Invalid date for ottapalu','error'); return; }
+    const kg = Number(ott_kg.value);
+    const rate = Number(document.getElementById('ott_rate').value);
+    if(!kg || kg <= 0){ showToast('Enter kg > 0','error'); return; }
+    if(isNaN(rate) || rate < 0){ showToast('Enter valid rate','error'); return; }
+
+    const all = readAll();
+    const sup = all[currentSupplierId];
+    const existing = (sup.records||[]).find(r => r.date === date && r.type === 'ottapalu');
+    if(existing){
+      const newKg = round((Number(existing.kg)||0) + kg);
+      const earning = round(newKg * rate);
+      existing.kg = newKg;
+      existing.rate = rate;
+      existing.earning = earning;
+      showToast('Existing Ottapalu record updated (aggregated)','success');
+    } else {
+      const earning = round(kg * rate);
+      sup.records.push({ id: Date.now(), type:'ottapalu', date, liters: null, meter: null, kg: round(kg), rate, earning });
+      showToast('Ottapalu record added','success');
+    }
+    if(writeAll(all)){ renderProfileRecords(); updateProfileTotals(); refreshSuppliersList(); }
+  });
+
+  // exports
+  document.getElementById('p_exportCSV').addEventListener('click', ()=> exportSupplierCSV(currentSupplierId, document.getElementById('p_month').value));
+  document.getElementById('p_exportHTML').addEventListener('click', ()=> exportSupplierHTML(currentSupplierId, document.getElementById('p_month').value));
+  document.getElementById('p_exportPDF').addEventListener('click', ()=> exportSupplierPDF(currentSupplierId, document.getElementById('p_month').value));
+
+  // render records and totals
+  renderProfileRecords();
+  updateProfileTotals();
+
+  // wire totals update on date/month change
+  document.getElementById('p_dailyDate').addEventListener('change', updateProfileTotals);
+  document.getElementById('p_month').addEventListener('change', updateProfileTotals);
+}
+
+/* ================= PROFILE: RENDER RECORDS ================= */
+function renderProfileRecords(){
+  const all = readAll();
+  const sup = all[currentSupplierId];
+  const area = document.getElementById('p_recordsArea');
+  if(!sup || !area) return;
+  const rows = sup.records || [];
+  if(rows.length === 0){ area.innerHTML = '<div class="muted">No records yet.</div>'; return; }
+
+  const table = document.createElement('table');
+  table.innerHTML = `<thead><tr>
+    <th>Date</th><th>Product</th><th>Liters</th><th>Meter</th><th>Kg</th><th>Rate</th><th class="right">Earning</th><th>Actions</th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+  rows.slice().reverse().forEach(r=>{
+    const productLabel = r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(r.date)}</td>
+      <td>${productLabel}</td>
+      <td>${r.liters === null ? '' : r.liters}</td>
+      <td>${r.meter === null ? '' : r.meter}</td>
+      <td>${r.kg}</td><td>${r.rate}</td><td class="right">${r.earning}</td>
+      <td><button class="btn" data-edit="${r.id}">Edit</button> <button class="btn ghost" data-del="${r.id}">Delete</button></td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  area.innerHTML = '';
+  area.appendChild(table);
+
+  // handlers
+  area.querySelectorAll('button[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const rid = Number(btn.getAttribute('data-del'));
+      if(!confirm('Delete this record?')) return;
+      const all = readAll();
+      all[currentSupplierId].records = all[currentSupplierId].records.filter(x=>x.id !== rid);
+      if(writeAll(all)){ renderProfileRecords(); updateProfileTotals(); refreshSuppliersList(); showToast('Record deleted'); }
+    });
+  });
+
+  area.querySelectorAll('button[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const rid = Number(btn.getAttribute('data-edit'));
+      openEditModal(rid);
+    });
+  });
+}
+
+/* ================= PROFILE: TOTALS ================= */
+function getSupplierRecordsForDate(supplierId, dateStr){
+  const all = readAll(); const sup = all[supplierId];
+  if(!sup) return [];
+  return (sup.records || []).filter(r => r.date === dateStr);
+}
+function getSupplierRecordsForMonth(supplierId, monthStr){
+  const all = readAll(); const sup = all[supplierId];
+  if(!sup) return [];
+  return (sup.records || []).filter(r => r.date && r.date.startsWith(monthStr));
+}
+function sumRecordsByType(records){
+  const res = { milk: { liters:0, kg:0, earn:0 }, ottapalu: { kg:0, earn:0 } };
+  records.forEach(r=>{
+    if(r.type === 'ottapalu'){
+      res.ottapalu.kg += Number(r.kg)||0; res.ottapalu.earn += Number(r.earning)||0;
+    } else {
+      res.milk.liters += Number(r.liters)||0; res.milk.kg += Number(r.kg)||0; res.milk.earn += Number(r.earning)||0;
+    }
+  });
+  res.milk.liters = round(res.milk.liters); res.milk.kg = round(res.milk.kg); res.milk.earn = round(res.milk.earn);
+  res.ottapalu.kg = round(res.ottapalu.kg); res.ottapalu.earn = round(res.ottapalu.earn);
+  res.combined = { kg: round(res.milk.kg + res.ottapalu.kg), earn: round(res.milk.earn + res.ottapalu.earn) };
+  return res;
+}
+
+function updateProfileTotals(){
+  if(!currentSupplierId) return;
+  const d = document.getElementById('p_dailyDate').value || new Date().toISOString().slice(0,10);
+  const recsDay = getSupplierRecordsForDate(currentSupplierId, d);
+  const sumsDay = sumRecordsByType(recsDay);
+  document.getElementById('p_dailyMilkLit').textContent = sumsDay.milk.liters;
+  document.getElementById('p_dailyMilkKg').textContent = sumsDay.milk.kg;
+  document.getElementById('p_dailyMilkEarn').textContent = sumsDay.milk.earn;
+
+  const m = document.getElementById('p_month').value || new Date().toISOString().slice(0,7);
+  const recsMonth = getSupplierRecordsForMonth(currentSupplierId, m);
+  const sumsMonth = sumRecordsByType(recsMonth);
+  document.getElementById('p_monthMilkKg').textContent = sumsMonth.milk.kg;
+  document.getElementById('p_monthOttKg').textContent = sumsMonth.ottapalu.kg;
+  document.getElementById('p_monthCombinedEarn').textContent = sumsMonth.combined.earn;
+}
+
+/* ================= EDIT RECORD MODAL ================= */
+function openEditModal(recId){
+  const all = readAll();
+  const sup = all[currentSupplierId];
+  if(!sup) return;
+  const rec = sup.records.find(r=> r.id === recId);
+  if(!rec) return;
+  editingRecordId = recId;
+  editType.value = rec.type || 'milk';
+  editDate.value = rec.date;
+  // show/hide
+  if(rec.type === 'ottapalu'){
+    editLitersWrap.style.display = 'none';
+    editMeterWrap.style.display = 'none';
+    editKgWrap.style.display = 'block';
+    editKg.value = rec.kg;
+  } else {
+    editLitersWrap.style.display = 'block';
+    editMeterWrap.style.display = 'block';
+    editKgWrap.style.display = 'none';
+    editLiters.value = rec.liters;
+    populateMetersInto(editMeter);
+    editMeter.value = rec.meter;
+  }
+  editRate.value = rec.rate;
+  editModal.style.display = 'flex';
+}
+cancelEdit.addEventListener('click', ()=>{ editModal.style.display = 'none'; editingRecordId = null; });
+
+editType.addEventListener('change', ()=>{
+  const t = editType.value;
+  if(t === 'ottapalu'){
+    editLitersWrap.style.display = 'none';
+    editMeterWrap.style.display = 'none';
+    editKgWrap.style.display = 'block';
+    editRate.value = editRate.value || 100;
+  } else {
+    editLitersWrap.style.display = 'block';
+    editMeterWrap.style.display = 'block';
+    editKgWrap.style.display = 'none';
+    editRate.value = editRate.value || 200;
+  }
+});
+
+saveEdit.addEventListener('click', ()=>{
+  if(!editingRecordId) return;
+  const date = editDate.value;
+  const type = editType.value;
+  if(!isValidDateString(date)){ showToast('Invalid date','error'); return; }
+  const rate = Number(editRate.value);
+  if(isNaN(rate) || rate < 0){ showToast('Enter valid rate','error'); return; }
+
+  let liters = null, meter = null, kg = null;
+  if(type === 'ottapalu'){
+    kg = round(Number(editKg.value) || 0);
+    if(!(kg > 0)){ showToast('Enter kg for Ottapalu','error'); return; }
+  } else {
+    liters = Number(editLiters.value);
+    meter = Number(editMeter.value);
+    if(!liters || liters <= 0){ showToast('Enter liters > 0','error'); return; }
+    if(!specialMap[meter]){ showToast('Select meter','error'); return; }
+    kg = round(liters * specialMap[meter]);
+  }
+  const earning = round(kg * rate);
+  const all = readAll();
+  const idx = all[currentSupplierId].records.findIndex(r=> r.id === editingRecordId);
+  if(idx === -1) return;
+  all[currentSupplierId].records[idx] = { id: editingRecordId, type, date, liters: liters===null?null:round(liters), meter: meter===null?null:meter, kg, rate, earning };
+  if(writeAll(all)){
+    editModal.style.display = 'none';
+    editingRecordId = null;
+    renderProfileRecords();
+    updateProfileTotals();
+    refreshSuppliersList();
+    showToast('Record updated','success');
+  }
+});
+
+/* ================= EXPORTS ================= */
+/* (same as previous — per-supplier and all-suppliers exports, including product breakdowns) */
+/* ... For brevity: reuse the export functions from previous version (kept unchanged) ... */
+
+/* --- per-supplier CSV/HTML/PDF with totals by product --- */
+function exportSupplierCSV(supplierId, month){
+  if(!month){ showToast('Pick month to export','error'); return; }
+  const rows = getSupplierRecordsForMonth(supplierId, month);
+  if(rows.length === 0){ showToast('No records for that month','error'); return; }
+  const sup = readAll()[supplierId];
+  let csv = 'supplier_id,supplier_name,product,date,liters,kg,rate_per_kg,total_LKR\n';
+  let milkLit=0,milkKg=0,milkEarn=0, ottKg=0, ottEarn=0;
+  rows.forEach(r=>{
+    const prod = r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk';
+    csv += `${supplierId},"${sup.name||''}",${prod},${r.date},${r.liters===null?'':r.liters},${r.kg},${r.rate},${r.earning}\n`;
+    if(r.type === 'ottapalu'){ ottKg += r.kg; ottEarn += r.earning; } else { milkLit += Number(r.liters)||0; milkKg += r.kg; milkEarn += r.earning; }
+  });
+  csv += `\nTOTALS,${supplierId},"Rubber Milk",,${round(milkLit)},${round(milkKg)},,${round(milkEarn)}\n`;
+  csv += `TOTALS,${supplierId},"Ottapalu",, ,${round(ottKg)},,${round(ottEarn)}\n`;
+  csv += `TOTALS,${supplierId},"COMBINED",, ,${round(milkKg + ottKg)},,${round(milkEarn + ottEarn)}\n`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${supplierId}_${month}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  showToast('CSV downloaded');
+}
+function exportSupplierHTML(supplierId, month){
+  if(!month){ showToast('Pick month to export','error'); return; }
+  const rows = getSupplierRecordsForMonth(supplierId, month);
+  if(rows.length === 0){ showToast('No records for that month','error'); return; }
+  const sup = readAll()[supplierId];
+  let milkLit=0,milkKg=0,milkEarn=0, ottKg=0, ottEarn=0;
+  let html = `<!doctype html><html><head><meta charset="utf-8"><title>${supplierId} ${month}</title>
+    <style>body{font-family:Arial;padding:16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>
+    <h1>${supplierId} — ${escapeHtml(sup.name||'')}</h1><p>Month: ${month}</p><table><thead><tr><th>Product</th><th>Date</th><th>Liters</th><th>Kg</th><th>Rate</th><th>Total</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const prod = r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk';
+    html += `<tr><td>${prod}</td><td>${r.date}</td><td>${r.liters===null?'':r.liters}</td><td>${r.kg}</td><td>${r.rate}</td><td>${r.earning}</td></tr>`;
+    if(r.type === 'ottapalu'){ ottKg += r.kg; ottEarn += r.earning; } else { milkLit += Number(r.liters)||0; milkKg += r.kg; milkEarn += r.earning; }
+  });
+  html += `</tbody></table><h3>Totals</h3><p>Rubber Milk — Liters: ${round(milkLit)} | Kg: ${round(milkKg)} | Earnings: ${round(milkEarn)} LKR</p>`;
+  html += `<p>Ottapalu — Kg: ${round(ottKg)} | Earnings: ${round(ottEarn)} LKR</p>`;
+  html += `<p><strong>Combined — Kg: ${round(milkKg + ottKg)} | Earnings: ${round(milkEarn + ottEarn)} LKR</strong></p></body></html>`;
+  const w = window.open(); w.document.write(html); w.document.close();
+  showToast('Opened supplier HTML (printable)');
+}
+function exportSupplierPDF(supplierId, month){
+  if(!month){ showToast('Pick month to export','error'); return; }
+  const rows = getSupplierRecordsForMonth(supplierId, month);
+  if(rows.length === 0){ showToast('No records for that month','error'); return; }
+  const sup = readAll()[supplierId];
+  let milkLit=0,milkKg=0,milkEarn=0, ottKg=0, ottEarn=0;
+  let html = `<!doctype html><html><head><meta charset="utf-8"><title>${supplierId} ${month}</title>
+    <style>body{font-family:Arial;padding:16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body>
+    <h1>${supplierId} — ${escapeHtml(sup.name||'')}</h1><p>Month: ${month}</p><table><thead><tr><th>Product</th><th>Date</th><th>Liters</th><th>Kg</th><th>Rate</th><th>Total</th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    const prod = r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk';
+    html += `<tr><td>${prod}</td><td>${r.date}</td><td>${r.liters===null?'':r.liters}</td><td>${r.kg}</td><td>${r.rate}</td><td>${r.earning}</td></tr>`;
+    if(r.type === 'ottapalu'){ ottKg += r.kg; ottEarn += r.earning; } else { milkLit += Number(r.liters)||0; milkKg += r.kg; milkEarn += r.earning; }
+  });
+  html += `</tbody></table><h3>Totals</h3><p>Rubber Milk — Liters: ${round(milkLit)} | Kg: ${round(milkKg)} | Earnings: ${round(milkEarn)} LKR</p>`;
+  html += `<p>Ottapalu — Kg: ${round(ottKg)} | Earnings: ${round(ottEarn)} LKR</p>`;
+  html += `<p><strong>Combined — Kg: ${round(milkKg + ottKg)} | Earnings: ${round(milkEarn + ottEarn)} LKR</strong></p></body></html>`;
+  const w = window.open(); w.document.write(html); w.document.close(); w.focus(); setTimeout(()=> w.print(), 500);
+  showToast('Print dialog opened');
+}
+
+/* ================= ALL-SUPPLIERS EXPORTS (with summaries & grand total per product) ================= */
+function getAllRecordsForMonth(month){
+  const all = readAll(); const rows = [];
+  Object.keys(all).forEach(id=>{
+    const sup = all[id];
+    (sup.records || []).forEach(r=>{
+      if(r.date && r.date.startsWith(month)){
+        rows.push({
+          supplierId: id,
+          supplierName: sup.name || '',
+          date: r.date,
+          type: r.type || 'milk',
+          liters: r.liters === null ? '' : Number(r.liters)||0,
+          kg: Number(r.kg)||0,
+          rate: Number(r.rate)||0,
+          earning: Number(r.earning)||0
+        });
+      }
+    });
+  });
+  rows.sort((a,b)=> (a.supplierId.localeCompare(b.supplierId) || a.date.localeCompare(b.date)));
+  return rows;
+}
+
+downloadCSVAll.addEventListener('click', ()=>{
+  const month = globalMonth.value; if(!month){ showToast('Pick month','error'); return; }
+  const rows = getAllRecordsForMonth(month);
+  if(rows.length === 0){ showToast('No records','error'); return; }
+  let csv = 'supplier_id,supplier_name,product,date,liters,kg,rate,total_LKR\n';
+  rows.forEach(r=> csv += `${r.supplierId},"${r.supplierName}",${r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk'},${r.date},${r.liters},${r.kg},${r.rate},${r.earning}\n`);
+  // per-supplier per-product summary
+  csv += '\nSUMMARY\n';
+  csv += 'supplier_id,supplier_name,product,total_liters,total_kg,total_earning\n';
+  const summary = {};
+  rows.forEach(r=>{
+    const key = `${r.supplierId}::${r.type}`;
+    if(!summary[key]) summary[key] = { supplierId: r.supplierId, supplierName: r.supplierName, type: r.type, liters:0, kg:0, earn:0 };
+    summary[key].liters += Number(r.liters)||0; summary[key].kg += Number(r.kg)||0; summary[key].earn += Number(r.earning)||0;
+  });
+  let grand = { milkKg:0, milkEarn:0, ottKg:0, ottEarn:0 };
+  Object.keys(summary).sort().forEach(k=>{
+    const s = summary[k];
+    csv += `${s.supplierId},"${s.supplierName}",${s.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk'},${round(s.liters)},${round(s.kg)},${round(s.earn)}\n`;
+    if(s.type === 'ottapalu'){ grand.ottKg += s.kg; grand.ottEarn += s.earn; } else { grand.milkKg += s.kg; grand.milkEarn += s.earn; }
+  });
+  csv += `\nGRAND TOTALS,,Rubber Milk, ,${round(grand.milkKg)},${round(grand.milkEarn)}\n`;
+  csv += `GRAND TOTALS,,Ottapalu, ,${round(grand.ottKg)},${round(grand.ottEarn)}\n`;
+  csv += `GRAND TOTALS,,COMBINED, ,${round(grand.milkKg + grand.ottKg)},${round(grand.milkEarn + grand.ottEarn)}\n`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `monthly_all_${month}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  showToast('CSV downloaded');
+});
+
+downloadHTMLAll.addEventListener('click', ()=>{
+  const month = globalMonth.value; if(!month){ showToast('Pick month','error'); return; }
+  const rows = getAllRecordsForMonth(month);
+  if(rows.length === 0){ showToast('No records','error'); return; }
+  const summary = {};
+  rows.forEach(r=>{
+    const key = `${r.supplierId}::${r.type}`;
+    if(!summary[key]) summary[key] = { supplierId: r.supplierId, supplierName: r.supplierName, type: r.type, liters:0, kg:0, earn:0 };
+    summary[key].liters += Number(r.liters)||0; summary[key].kg += Number(r.kg)||0; summary[key].earn += Number(r.earning)||0;
+  });
+  let html = `<html><head><meta charset="utf-8"><title>Monthly All ${month}</title><style>body{font-family:Arial;padding:16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body><h1>Monthly All ${month}</h1><h2>Details</h2><table><thead><tr><th>Supplier</th><th>Name</th><th>Product</th><th>Date</th><th>Liters</th><th>Kg</th><th>Rate</th><th>Total</th></tr></thead><tbody>`;
+  rows.forEach(r=> html += `<tr><td>${escapeHtml(r.supplierId)}</td><td>${escapeHtml(r.supplierName)}</td><td>${r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk'}</td><td>${r.date}</td><td>${r.liters}</td><td>${r.kg}</td><td>${r.rate}</td><td>${r.earning}</td></tr>`);
+  html += `</tbody></table><h2>Summary per Supplier & Product</h2><table><thead><tr><th>Supplier</th><th>Name</th><th>Product</th><th>Total Liters</th><th>Total Kg</th><th>Total Earn</th></tr></thead><tbody>`;
+  let grand = { milkKg:0, milkEarn:0, ottKg:0, ottEarn:0 };
+  Object.keys(summary).sort().forEach(k=>{
+    const s = summary[k];
+    html += `<tr><td>${escapeHtml(s.supplierId)}</td><td>${escapeHtml(s.supplierName)}</td><td>${s.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk'}</td><td>${round(s.liters)}</td><td>${round(s.kg)}</td><td>${round(s.earn)}</td></tr>`;
+    if(s.type === 'ottapalu'){ grand.ottKg += s.kg; grand.ottEarn += s.earn; } else { grand.milkKg += s.kg; grand.milkEarn += s.earn; }
+  });
+  html += `</tbody></table><h3>Grand Totals — Rubber Milk Kg: ${round(grand.milkKg)} | Rubber Milk Earn: ${round(grand.milkEarn)} LKR</h3>`;
+  html += `<h3>Ottapalu Kg: ${round(grand.ottKg)} | Ottapalu Earn: ${round(grand.ottEarn)} LKR</h3>`;
+  html += `<h2>Combined — Kg: ${round(grand.milkKg + grand.ottKg)} | Earn: ${round(grand.milkEarn + grand.ottEarn)} LKR</h2></body></html>`;
+  const w = window.open(); w.document.write(html); w.document.close();
+  showToast('Opened printable HTML');
+});
+
+downloadPDFAll.addEventListener('click', ()=>{
+  const month = globalMonth.value; if(!month){ showToast('Pick month','error'); return; }
+  const rows = getAllRecordsForMonth(month);
+  if(rows.length === 0){ showToast('No records','error'); return; }
+  let html = `<html><head><meta charset="utf-8"><title>Monthly All ${month}</title><style>body{font-family:Arial;padding:16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:6px}</style></head><body><h1>Monthly All ${month}</h1><table><thead><tr><th>Supplier</th><th>Name</th><th>Product</th><th>Date</th><th>Liters</th><th>Kg</th><th>Rate</th><th>Earn</th></tr></thead><tbody>`;
+  rows.forEach(r=> html += `<tr><td>${escapeHtml(r.supplierId)}</td><td>${escapeHtml(r.supplierName)}</td><td>${r.type === 'ottapalu' ? 'Ottapalu' : 'Rubber Milk'}</td><td>${r.date}</td><td>${r.liters}</td><td>${r.kg}</td><td>${r.rate}</td><td>${r.earning}</td></tr>`);
+  html += `</tbody></table></body></html>`;
+  const w = window.open('','_blank'); w.document.write(html); w.document.close(); w.focus(); setTimeout(()=> w.print(), 500);
+  showToast('Print dialog opened');
+});
+
+/* ================= TOP-BAR EXPORT HOOKS ================= */
+exportSupplierProfileCSV.addEventListener('click', ()=>{ const m = document.querySelector('#p_month')?.value || globalMonth.value; exportSupplierCSV(currentSupplierId, m); });
+exportSupplierProfileHTML.addEventListener('click', ()=>{ const m = document.querySelector('#p_month')?.value || globalMonth.value; exportSupplierHTML(currentSupplierId, m); });
+exportSupplierProfilePDF.addEventListener('click', ()=>{ const m = document.querySelector('#p_month')?.value || globalMonth.value; exportSupplierPDF(currentSupplierId, m); });
+
+/* ================= HOME TOTALS (all-time) ================= */
+function updateHomeTotals(){
+  const all = readAll();
+  let milkKg = 0, milkEarn = 0, ottKg = 0, ottEarn = 0;
+  Object.keys(all).forEach(id=>{
+    (all[id].records||[]).forEach(r=>{
+      if(r.type === 'ottapalu'){ ottKg += Number(r.kg)||0; ottEarn += Number(r.earning)||0; }
+      else { milkKg += Number(r.kg)||0; milkEarn += Number(r.earning)||0; }
+    });
+  });
+  document.getElementById('home_milkKg').textContent = round(milkKg);
+  document.getElementById('home_milkEarn').textContent = round(milkEarn);
+  document.getElementById('home_ottKg').textContent = round(ottKg);
+  document.getElementById('home_ottEarn').textContent = round(ottEarn);
+  document.getElementById('home_combinedEarn').textContent = round(milkEarn + ottEarn);
+}
+
+/* ================= FIELD ERROR HELPERS ================= */
+function showFieldError(inputEl, message){
+  if(inputEl) inputEl.classList.add('input-error');
+  showToast(message, 'error');
+  const id = inputEl && inputEl.id ? inputEl.id + 'Error' : null;
+  if(id){
+    const el = document.getElementById(id);
+    if(el){ el.textContent = message; el.style.display = 'block'; }
+  }
+}
+function clearFieldErrors(){
+  ['supplierIdError','supplierNameError'].forEach(id=>{ const el = document.getElementById(id); if(el){ el.style.display='none'; el.textContent=''; } });
+  [supplierId,supplierName,searchId].forEach(i=>{ if(i) i.classList.remove('input-error'); });
+}
+
+/* ================= STORAGE CHECK & INIT ================= */
+function checkStorageAvailable(){
+  try{ const k='__storage_test__'; localStorage.setItem(k,k); localStorage.removeItem(k); document.getElementById('storageStatus').textContent = 'Storage: OK'; }
+  catch(e){ document.getElementById('storageStatus').textContent = 'Storage: Unavailable'; showToast('localStorage unavailable: data will not persist','error'); }
+}
+
+(function init(){
+  checkStorageAvailable();
+  populateMetersInto(document.querySelectorAll('select'));
+  refreshSuppliersList();
+  globalMonth.value = new Date().toISOString().slice(0,7);
+  // allow Enter to open from search
+  searchId.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') openProfileBtn.click(); });
+})();
+
+/* listen storage changes across tabs */
+window.addEventListener('storage', ()=>{ refreshSuppliersList(); if(currentSupplierId) buildProfileContent(); });
+
+</script>
+</body>
+</html>
