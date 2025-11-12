@@ -13,6 +13,7 @@
             min-height: 100vh;
             background-color: #f0f8ff; /* Light blue background */
             color: #333;
+            margin: 0;
         }
         .loading-box {
             text-align: center;
@@ -44,12 +45,12 @@
     </div>
 
     <script>
-        // --- YOUR SECRET CONFIGURATION FOR THE GATE PASS ---
+        // --- YOUR DEFINITIVE GATE PASS CONFIGURATION ---
         // Only one gate pass: "199467" -> "199467.html"
 
         const _getMap = () => {
             const map = {
-                // HASH of "199467" is: 71c4c95f13454231b790d56b0d9111c1d81123512b9d0473a218d8e5f29d10e5
+                // This is the SHA-256 hash of the string "199467"
                 "71c4c95f13454231b790d56b0d9111c1d81123512b9d0473a218d8e5f29d10e5": "199467.html"
             };
             return map;
@@ -72,9 +73,13 @@
             const urlParams = new URLSearchParams(window.location.search);
             const enteredCode = urlParams.get('code');
 
+            // Construct the base URL for redirection (e.g., https://colombagesahan.github.io/storukade/)
+            const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/';
+
             if (!enteredCode) {
-                // If no code was passed, redirect to the password entry page with an error
-                window.location.replace("password.html?error=no_code_provided");
+                // If no code was passed (e.g., accessed checkcode.html directly),
+                // redirect to the password entry page.
+                window.location.replace(baseUrl + "password.html?error=no_code_provided");
                 return;
             }
 
@@ -83,11 +88,12 @@
 
             if (codeMap[hashedEnteredCode]) {
                 // If the hashed code is found in our map, redirect to the target page
-                window.location.replace(codeMap[hashedEnteredCode]);
+                const targetPage = codeMap[hashedEnteredCode];
+                window.location.replace(baseUrl + targetPage); // Use robust absolute URL
             } else {
-                // If no match, redirect to a generic error page
+                // If no match, redirect to the error page.
                 // Since there's only one valid code, anything else goes here.
-                window.location.replace("error.html?reason=invalid_code");
+                window.location.replace(baseUrl + "error.html?reason=invalid_code"); // Use robust absolute URL
             }
         }
 
